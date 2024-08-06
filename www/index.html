@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+		<link rel="icon" href="data:,">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Obligatorio</title>
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js"></script>
+        <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core/css/ionic.bundle.css" />
+    </head>
+    <body>
+        <ion-app>
+            <!-- Ruteo -->
+            <ion-router id="ruteo" root="/">
+                <ion-route url="/" component="page-home"></ion-route>
+                <ion-route url="/login" component="page-login"></ion-route>
+                <ion-route url="/registro" component="page-registro"></ion-route>
+                <ion-route url="/agregar" component="page-agregar"></ion-route>
+            </ion-router>
+            <ion-nav id="nav"></ion-nav>
+
+            <!-- Menú -->
+            <ion-menu content-id="main-content" id="menu">
+                <ion-header>
+                    <ion-toolbar>
+                        <ion-title>Menu</ion-title>
+                    </ion-toolbar>
+                </ion-header>
+                <ion-content>
+                    <ion-list>
+                        <ion-item href="/login" onclick="cerrarMenu()" id="btnMenuLogin">Login</ion-item>
+                        <ion-item href="/registro" onclick="cerrarMenu()" id="btnMenuRegistro">Registro</ion-item>
+                        <ion-item href="/agregar" onclick="cerrarMenu()" id="btnMenuAgregarEvento">Agregar Evento</ion-item>
+                        <ion-item onclick="cerrarSesion()" id="btnMenuCerrarSesion">Cerrar Sesión</ion-item>
+                    </ion-list>
+                </ion-content>
+            </ion-menu>
+            <div id="main-content"></div>
+
+            <!-- Pantalla - Home -->
+            <page-home class="ion-page" id="pantalla-home">
+                
+            </page-home>
+
+            <!-- Pantalla - Login -->
+            <page-login class="ion-page" id="pantalla-login">
+                <ion-header>
+                    <ion-toolbar color="tertiary">
+                        <ion-buttons slot="start">
+                            <ion-menu-button></ion-menu-button>
+                        </ion-buttons>
+                        <ion-title>Login</ion-title>
+                    </ion-toolbar>
+                </ion-header>
+                <ion-content>
+                    <ion-list>
+                        <ion-item>
+                            <ion-input id="inputUsuarioIngresar" type="usuario" label="Usuario" label-placement="floating"></ion-input>
+                        </ion-item>
+                        <br>
+                        <ion-item>
+                            <ion-input id="inputPasswordIngresar" type="password" label="Contraseña" label-placement="floating"></ion-input>
+                        </ion-item>
+                    </ion-list>
+                    <br>
+                    <ion-button id="btnIngresar" expand="block" color="tertiary">Ingresar</ion-button>
+                    <br><br>
+                </ion-content>
+
+            </page-login>
+
+            <!-- Pantalla - Registro -->
+            <page-registro class="ion-page" id="pantalla-registro">
+                <ion-header>
+                    <ion-toolbar color="tertiary">
+                        <ion-buttons slot="start">
+                            <ion-menu-button></ion-menu-button>
+                        </ion-buttons>
+                        <ion-title>Registro</ion-title>
+                    </ion-toolbar>
+                </ion-header>
+                <ion-content>
+                    <ion-item>
+                        <ion-input id="inputUsuario" type="text" label="Usuario" label-placement="floating"></ion-input>
+                        </ion-item>
+                        <br>
+                        <ion-item>
+                        <ion-input id="inputPassword" type="password" label="Contraseña" label-placement="floating"></ion-input>
+                        </ion-item>
+                        <br>
+                        <ion-item>
+                        <ion-input id="inputVerificacion" type="password" label="Repetir Contraseña" label-placement="floating"></ion-input>
+                        </ion-item>
+                        <br>
+                        <ion-item>
+                        <ion-input id="inputDepartamento" type="text" label="Dirección" label-placement="floating"></ion-input>
+                        </ion-item>
+                        <br>
+                        <ion-item>
+                        <ion-input id="inputCiudad" type="text" label="Ciudad" label-placement="floating"></ion-input>
+                        </ion-item>
+                    </ion-list>
+                    <br>
+                    <ion-button id="btnRegistrarse" expand="block" color="tertiary">Registrarse</ion-button>
+                    <br><br>
+                </ion-content>
+            </page-registro>
+
+            <page-agregar class="ion-page" id="pantalla-agregar">
+                <ion-header>
+                    <ion-toolbar color="tertiary">
+                        <ion-buttons slot="start">
+                            <ion-menu-button></ion-menu-button>
+                        </ion-buttons>
+                        <ion-title>Agregar Evento</ion-title>
+                    </ion-toolbar>
+                </ion-header>
+                <ion-content>
+                    <ion-item>
+                        <ion-list>
+                            <ion-item>
+                              <ion-select id="pantalla-agregar-combo-categorias" placeholder="Seleccionar Categoría">
+                                
+                              </ion-select>
+                            </ion-item>
+                          </ion-list>
+                    </ion-item>
+                    <br>
+                    <ion-item>
+                        <ion-datetime-button datetime="datetime"></ion-datetime-button>
+                        <ion-modal>
+                          <ion-datetime id="datetime"></ion-datetime>
+                        </ion-modal>
+                    </ion-item>
+                    <br>
+                    <ion-item>
+                        <ion-input id="inputDetalle" type="textarea" label="Detalle" label-placement="floating"></ion-input>
+                    </ion-item>
+                    <br>
+                    <ion-button id="btnAgregarEvento" expand="block" color="tertiary">Agregar Evento</ion-button>
+                    <br><br>
+                </ion-content>
+            </page-agregar>
+
+        </ion-app>
+        <script type="text/javascript" src="js/clases.js"></script>
+        <script type="text/javascript" src="js/app.js"></script>
+    </body>
+</html>
+
