@@ -4,6 +4,8 @@
 const APIbaseURL = 'https://babytracker.develotion.com';
 let usuarioLogueado = null;
 let categorias =[];
+let departamentos =[];
+let ciudades =[];
 
 const MENU = document.querySelector("#menu");
 const ROUTER = document.querySelector("#ruteo");
@@ -13,6 +15,8 @@ const PANTALLA_LOGIN = document.querySelector("#pantalla-login");
 const PANTALLA_REGISTRO = document.querySelector("#pantalla-registro");
 const PANTALLA_AGREGAR = document.querySelector("#pantalla-agregar");
 const COMBO_CATEGORIAS = document.querySelector("#pantalla-agregar-combo-categorias");
+const COMBO_DEPARTAMENTOS = document.querySelector("#inputDepartamento");
+const COMBO_CIUDADES = document.querySelector("#inputCiudad");
 
 //========================================================================
 // -------------------------------- INIT -------------------------------- 
@@ -29,6 +33,7 @@ function suscribirmeAEventos() {
     document.querySelector("#btnAgregarEvento").addEventListener("click", btnAgregarEventoHandler);
 
     COMBO_CATEGORIAS.addEventListener("ionChange", comboCategoriasChangeHandler);
+    COMBO_DEPARTAMENTOS.addEventListener("ionChange", comboDepartamentosChangeHandler);
 
     // Ruteo
     ROUTER.addEventListener("ionRouteDidChange", navegar);
@@ -176,6 +181,7 @@ function navegar(evt) {
             PANTALLA_LOGIN.style.display = "block";
             break;
         case "/registro":
+            listarDepartamentos();
             PANTALLA_REGISTRO.style.display = "block";
             break;
         case "/agregar":
@@ -183,6 +189,80 @@ function navegar(evt) {
             PANTALLA_AGREGAR.style.display = "block";
             break;
     }
+}
+
+//========================================================================
+// ------------------------------ COMBOS  ------------------------------
+//========================================================================
+function listarDepartamentos() {
+    fetch(`${APIbaseURL}/departamentos.php`, {
+        method: 'GET',
+        headers: {
+            "Content-Type": "application/json",
+        }
+    })
+    .then(response => {
+        if (response.codigo === 401) {
+            console.log(response);
+        } else {
+            return response.json();
+        }
+    }).then(data => {
+        if (data.error) {
+            mostrarToast('ERROR', 'Error', data.error);
+        } else if (data.departamentos.length === 0) {
+            mostrarToast('ERROR', 'Error', 'No se han encontado departamentos');
+        } else {
+            console.log(data);
+            for (let i = 0; i < data.departamentos.length; i++) {
+                console.log(data.departamentos[i]);
+                const departamentoActual = data.departamentos[i];
+                departamentos.push(departamentoActual);
+            }
+            COMBO_DEPARTAMENTOS.innerHTML = "";
+            for (let i = 0; i < departamentos.length; i++) {
+                const departamento = departamentos[i];
+                const option = document.createElement("ion-select-option");
+                option.value = departamento.id;
+                option.innerText = departamento.nombre;
+                COMBO_DEPARTAMENTOS.appendChild(option);
+            }
+        }
+    })
+}
+
+function comboDepartamentosChangeHandler(evt) {
+    console.log(evt);
+    const idDepartamento = evt.detail.value;
+    fetch(`${APIbaseURL}/ciudades.php?idDepartamento=${idDepartamento}`, {
+        method: 'GET',
+        headers: {
+            "Content-Type": "application/json",
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            mostrarToast('ERROR', 'Error', data.error);
+        } else if (data.ciudades.length === 0) {
+            mostrarToast('ERROR', 'Error', 'No se han encontrado ciudades');
+        } else {
+            console.log(data);
+            for (let i = 0; i < data.ciudades.length; i++) {
+                console.log(data.ciudades[i]);
+                const ciudadActual = data.ciudades[i];
+                ciudades.push(ciudadActual);
+            }
+            COMBO_CIUDADES.innerHTML = "";
+            for (let i = 0; i < ciudades.length; i++) {
+                const ciudad = ciudades[i];
+                const option = document.createElement("ion-select-option");
+                option.value = ciudad.id;
+                option.innerText = ciudad.nombre;
+                COMBO_CIUDADES.appendChild(option);
+            }
+        }
+    })
 }
 
 function listarCategorias() {
@@ -205,7 +285,7 @@ function listarCategorias() {
         .then(data => {
             if (data.error) {
                 mostrarToast('ERROR', 'Error', data.error);
-            } else if (data.length === 0) {
+            } else if (data.categorias.length === 0) {
                 mostrarToast('ERROR', 'Error', 'No se han encontado categorías');
             } else {
                 console.log(data);
