@@ -145,6 +145,50 @@ function btnIngresarHandler() {
 function btnAgregarEventoHandler(){
     const fecha = document.querySelector("#datetime").value;
     console.log(fecha);
+    const detalle = document.querySelector("#inputDetalle").value;
+    const idCategoria = document.querySelector("#pantalla-agregar-combo-categorias").value;
+    console.log(idCategoria);
+    const idUsuario = usuarioLogueado.id;
+    console.log(idUsuario);
+    if (fecha && detalle && idCategoria && idUsuario) {
+        let nuevoEvento = new Evento();
+        nuevoEvento.fecha = fecha;
+        nuevoEvento.detalle = detalle;
+        nuevoEvento.idCategoria = idCategoria;
+        nuevoEvento.idUsuario = idUsuario;
+        console.log(nuevoEvento);
+
+        fetch(`${APIbaseURL}/eventos.php`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                "Authorization": "Bearer " + usuarioLogueado.apiKey,
+                "apikey": usuarioLogueado.apiKey,
+                "iduser": usuarioLogueado.id
+            },
+            body: JSON.stringify(nuevoEvento)
+        })
+            .then(response => {
+                if (response.status === 401) {
+                    console.log(response);
+                    cerrarSesionPorFaltaDeToken();
+                } else {
+                    return response.json();
+                }
+            })
+            .then(data => {
+                console.log(data);
+                // vaciar campos
+                document.querySelector("#datetime").value = "";
+                document.querySelector("#inputDetalle").value = "";
+                mostrarToast('SUCCESS', 'Evento agregado', data.mensaje);           
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    } else {
+        mostrarToast('ERROR', 'Error', 'Todos los campos son obligatorios.');
+    }
 
 }
 
@@ -174,33 +218,57 @@ function btnMenuListarEventosHandler(){
             }
             console.log(eventos);
             
-            let listadoEventos = '<ion-list>';
+            let listadoEventosHoy = `
+                <h1>Eventos de hoy</h1>
+                <ion-list>
+            
+            `;
+
+            let listadoEventosPasados = `
+                <h1>Eventos Pasados</h1>
+                <ion-list>
+            
+            `;
 
             eventos.forEach(e => {
                 let categoria = categorias.find(c => c.id === e.idCategoria);
-                console.log(categorias); 
-                console.log(categoria); 
-                listadoEventos += `
+                let hoy = new Date();
+                
+                if (new Date(e.fecha).toDateString() === new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()).toDateString()) {
+                    listadoEventosHoy += `
                     <ion-item class="ion-item-evento" producto-id="${e.id}">
                        <ion-thumbnail slot="start">
                             <img src="https://babytracker.develotion.com/imgs/${categoria.imagen}.png" width="100"/>
                         </ion-thumbnail>
                         <ion-label>
+                            <h2>${categoria.tipo}</h2>
                             <p>${e.fecha}</p>
                             <p>${e.detalle}</p>
                         </ion-label>
                         
                     </ion-item>
                 `;
+                } else {
+                    listadoEventosPasados += `
+                    <ion-item class="ion-item-evento" producto-id="${e.id}">
+                       <ion-thumbnail slot="start">
+                            <img src="https://babytracker.develotion.com/imgs/${categoria.imagen}.png" width="100"/>
+                        </ion-thumbnail>
+                        <ion-label>
+                            <h2>${categoria.tipo}</h2>
+                            <p>${e.fecha}</p>
+                            <p>${e.detalle}</p>
+                        </ion-label>
+                        
+                    </ion-item>
+                `;
+                }
             });
             
-            listadoEventos += '</ion-list>';
+            listadoEventosHoy += '</ion-list>';
+            listadoEventosPasados += '</ion-list>';
 
-            if (eventos.length === 0) {
-                listadoEventos = "No se encontraron eventos.";
-            }
-
-            document.querySelector("#divEventos").innerHTML = listadoEventos;
+            document.querySelector("#divEventos").innerHTML = listadoEventosHoy + listadoEventosPasados;
 
 
         })
