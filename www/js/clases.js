@@ -58,17 +58,12 @@ class Categoria {
     }
 }
 
-class Producto {
+class Evento {
     constructor() {
         this.id = null;
-        this.etiquetas = null;
-        this.codigo = null;
-        this.nombre = null;
-        this.descripcion = null;
-        this.precio = null;
-        this.urlImagen = null;
-        this.estado = null;
-        this.puntaje = null;
+        this.detalle = null;
+        this.idCategoria = null;
+        this.fecha = null;
     }
 
     static parse(data) {
@@ -77,29 +72,14 @@ class Producto {
         if (data._id) {
             instancia.id = data._id;
         }
-        if (data.etiquetas) {
-            instancia.etiquetas = data.etiquetas;
+        if (data.detalle) {
+            instancia.detalle = data.detalle;
         }
-        if (data.codigo) {
-            instancia.codigo = data.codigo;
+        if (data.idCategoria) {
+            instancia.idCategoria = data.idCategoria;
         }
-        if (data.nombre) {
-            instancia.nombre = data.nombre;
-        }
-        if (data.descripcion) {
-            instancia.descripcion = data.descripcion;
-        }
-        if (data.precio) {
-            instancia.precio = data.precio;
-        }
-        if (data.urlImagen) {
-            instancia.urlImagen = data.urlImagen;
-        }
-        if (data.estado) {
-            instancia.estado = data.estado;
-        }
-        if (data.puntaje) {
-            instancia.puntaje = data.puntaje;
+        if (data.fecha) {
+            instancia.fecha = data.fecha;
         }
 
         return instancia;

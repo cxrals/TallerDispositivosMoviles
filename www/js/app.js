@@ -6,6 +6,7 @@ let usuarioLogueado = null;
 let categorias =[];
 let departamentos =[];
 let ciudades =[];
+let eventos =[];
 
 const MENU = document.querySelector("#menu");
 const ROUTER = document.querySelector("#ruteo");
@@ -14,6 +15,7 @@ const PANTALLA_HOME = document.querySelector("#pantalla-home");
 const PANTALLA_LOGIN = document.querySelector("#pantalla-login");
 const PANTALLA_REGISTRO = document.querySelector("#pantalla-registro");
 const PANTALLA_AGREGAR = document.querySelector("#pantalla-agregar");
+const PANTALLA_LISTAR = document.querySelector("#pantalla-listar");
 const COMBO_CATEGORIAS = document.querySelector("#pantalla-agregar-combo-categorias");
 const COMBO_DEPARTAMENTOS = document.querySelector("#inputDepartamento");
 const COMBO_CIUDADES = document.querySelector("#inputCiudad");
@@ -31,6 +33,7 @@ function suscribirmeAEventos() {
     document.querySelector("#btnIngresar").addEventListener("click", btnIngresarHandler);
     document.querySelector("#btnRegistrarse").addEventListener("click", btnRegistrarseHandler);
     document.querySelector("#btnAgregarEvento").addEventListener("click", btnAgregarEventoHandler);
+    document.querySelector("#btnMenuListarEventos").addEventListener("click", btnMenuListarEventosHandler);
 
     COMBO_CATEGORIAS.addEventListener("ionChange", comboCategoriasChangeHandler);
     COMBO_DEPARTAMENTOS.addEventListener("ionChange", comboDepartamentosChangeHandler);
@@ -58,32 +61,36 @@ function btnRegistrarseHandler() {
             nuevoUsuario.idDepartamento = departamento;
             nuevoUsuario.idCiudad = ciudad;
 
-            fetch(`${APIbaseURL}/usuarios`, {
+            console.log(nuevoUsuario);
+
+            fetch(`${APIbaseURL}/usuarios.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(nuevoUsuario)
             })
-                .then(response => response.json())
-                .then(data => {
-                    console.log(data);
-                    if (data.error) {
-                        mostrarToast('ERROR', 'Error', data.error);
-                    } else {
-                        // vaciar campos
-                        document.querySelector("#inputUsuario").value = "";
-                        document.querySelector("#inputPassword").value = "";
-                        document.querySelector("#inputVerificacion").value = "";
-                        document.querySelector("#inputDepartamento").value = "";
-                        document.querySelector("#inputCiudad").value = "";
-                        mostrarToast('SUCCESS', 'Registro exitoso', 'Ya puede iniciar sesión.');
-                        NAV.push("page-login");
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
+            .then((response) => {
+                return response.json()
+            })
+            .then(data => {
+                console.log(data);
+                if (data.mensaje) {
+                    mostrarToast('ERROR', 'Error', data.mensaje);
+                } else {
+                    // vaciar campos
+                    document.querySelector("#inputUsuario").value = "";
+                    document.querySelector("#inputPassword").value = "";
+                    document.querySelector("#inputVerificacion").value = "";
+                    document.querySelector("#inputDepartamento").value = "";
+                    document.querySelector("#inputCiudad").value = "";
+                    mostrarToast('SUCCESS', 'Registro exitoso', 'Ya puede iniciar sesión.');
+                    NAV.push("page-login");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
         } else {
             mostrarToast('ERROR', 'Error', 'Las contraseñas no coinciden.');
         }
@@ -93,7 +100,7 @@ function btnRegistrarseHandler() {
 
 }
 
-/* Login */
+// -------------------------- LOGIN --------------------------
 function btnIngresarHandler() {
     const usuario = document.querySelector("#inputUsuarioIngresar").value;
     const password = document.querySelector("#inputPasswordIngresar").value;
@@ -113,8 +120,8 @@ function btnIngresarHandler() {
             .then(response => response.json())
             .then(data => {
                 console.log(data);
-                if (data.error) {
-                    mostrarToast('ERROR', 'Error', data.error);
+                if (data.mensaje) {
+                    mostrarToast('ERROR', 'Error', data.mensaje);
                 } else {
                     // vaciar campos
                     document.querySelector("#inputUsuarioIngresar").value = "";
@@ -141,6 +148,68 @@ function btnAgregarEventoHandler(){
 
 }
 
+function btnMenuListarEventosHandler(){
+    fetch(`${APIbaseURL}/eventos.php?idUsuario=${usuarioLogueado.id}`, {
+        method: 'GET',
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + usuarioLogueado.apiKey,
+            "apikey": usuarioLogueado.apiKey,
+            "iduser": usuarioLogueado.id
+        }})
+        .then(response => {
+            if (response.codigo === 401) {
+                console.log(response);
+                // TODO cerrar sesion por falta de token
+                cerrarSesionPorFaltaDeToken();
+            } else {
+                return response.json();
+            }
+        }).then(data => {
+            console.log(data);
+            for (let i = 0; i < data.eventos.length; i++) {
+                console.log(data.eventos[i]);
+                const eventoActual = data.eventos[i];
+                eventos.push(eventoActual);
+            }
+            console.log(eventos);
+            
+            let listadoEventos = '<ion-list>';
+
+            eventos.forEach(e => {
+                let categoria = categorias.find(c => c.id === e.idCategoria);
+                console.log(categorias); 
+                console.log(categoria); 
+                listadoEventos += `
+                    <ion-item class="ion-item-evento" producto-id="${e.id}">
+                       <ion-thumbnail slot="start">
+                            <img src="https://babytracker.develotion.com/imgs/${categoria.imagen}.png" width="100"/>
+                        </ion-thumbnail>
+                        <ion-label>
+                            <p>${e.fecha}</p>
+                            <p>${e.detalle}</p>
+                        </ion-label>
+                        
+                    </ion-item>
+                `;
+            });
+            
+            listadoEventos += '</ion-list>';
+
+            if (eventos.length === 0) {
+                listadoEventos = "No se encontraron eventos.";
+            }
+
+            document.querySelector("#divEventos").innerHTML = listadoEventos;
+
+
+        })
+        .catch((error) => {
+            console.log(error);
+            mostrarToast('ERROR', 'Error', 'Por favor, intente nuevamente.');
+        });
+}
+
 //========================================================================
 // ------------------------------- RUTEO  -------------------------------
 //========================================================================
@@ -155,9 +224,13 @@ function navegar(evt) {
 
     document.querySelector("#btnMenuLogin").style.display = "none";
     document.querySelector("#btnMenuRegistro").style.display = "none";
+    document.querySelector("#btnMenuAgregarEvento").style.display = "none";
+    document.querySelector("#btnMenuListarEventos").style.display = "none";
     document.querySelector("#btnMenuCerrarSesion").style.display = "none";
 
     if (usuarioLogueado) {
+        document.querySelector("#btnMenuAgregarEvento").style.display = "block";
+        document.querySelector("#btnMenuListarEventos").style.display = "block";
         document.querySelector("#btnMenuCerrarSesion").style.display = "block";
     } else {
         document.querySelector("#btnMenuLogin").style.display = "block";
@@ -188,6 +261,10 @@ function navegar(evt) {
             listarCategorias();
             PANTALLA_AGREGAR.style.display = "block";
             break;
+        case "/listar":
+            listarCategorias();
+            PANTALLA_LISTAR.style.display = "block";
+            break;
     }
 }
 
@@ -204,6 +281,7 @@ function listarDepartamentos() {
     .then(response => {
         if (response.codigo === 401) {
             console.log(response);
+            cerrarSesionPorFaltaDeToken();
         } else {
             return response.json();
         }
@@ -278,6 +356,7 @@ function listarCategorias() {
         .then(response => {
             if (response.status === 401) {
                 console.log(response);
+                cerrarSesionPorFaltaDeToken();
             } else {
                 return response.json();
             }
@@ -318,6 +397,7 @@ function ocultarPantallas() {
     PANTALLA_LOGIN.style.display = "none";
     PANTALLA_REGISTRO.style.display = "none";
     PANTALLA_AGREGAR.style.display = "none";
+    PANTALLA_LISTAR.style.display = "none";
 }
 
 /* Menú */
@@ -325,7 +405,7 @@ function cerrarMenu() {
     MENU.close();
 }
 
-/* Logout */
+// -------------------------- LOGOUT -------------------------
 function cerrarSesion() {
     cerrarMenu();
     localStorage.clear();
@@ -334,8 +414,12 @@ function cerrarSesion() {
     NAV.popToRoot();
 }
 
+function cerrarSesionPorFaltaDeToken() {
+    mostrarToast('ERROR', 'No autorizado', 'Se ha cerrado sesión por seguridad');
+    cerrarSesion();
+}
 
-/* Toast */
+// -------------------------- TOAST --------------------------
 async function mostrarToast(tipo, titulo, mensaje) {
     const toast = document.createElement('ion-toast');
     toast.header = titulo;

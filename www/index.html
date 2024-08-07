@@ -17,6 +17,7 @@
                 <ion-route url="/login" component="page-login"></ion-route>
                 <ion-route url="/registro" component="page-registro"></ion-route>
                 <ion-route url="/agregar" component="page-agregar"></ion-route>
+                <ion-route url="/listar" component="page-listar"></ion-route>
             </ion-router>
             <ion-nav id="nav"></ion-nav>
 
@@ -32,6 +33,7 @@
                         <ion-item href="/login" onclick="cerrarMenu()" id="btnMenuLogin">Login</ion-item>
                         <ion-item href="/registro" onclick="cerrarMenu()" id="btnMenuRegistro">Registro</ion-item>
                         <ion-item href="/agregar" onclick="cerrarMenu()" id="btnMenuAgregarEvento">Agregar Evento</ion-item>
+                        <ion-item href="/listar" onclick="cerrarMenu()" id="btnMenuListarEventos">Listado de Eventos</ion-item>
                         <ion-item onclick="cerrarSesion()" id="btnMenuCerrarSesion">Cerrar Sesión</ion-item>
                     </ion-list>
                 </ion-content>
@@ -141,6 +143,21 @@
                     <br><br>
                 </ion-content>
             </page-agregar>
+
+            <page-listar class="ion-page" id="pantalla-listar">
+                <ion-header>
+                    <ion-toolbar color="tertiary">
+                        <ion-buttons slot="start">
+                            <ion-menu-button></ion-menu-button>
+                        </ion-buttons>
+                        <ion-title>Eventos</ion-title>
+                    </ion-toolbar>
+                </ion-header>
+                <ion-content>
+                    <div id="divEventos"></div>
+                    <br><br><br>
+                </ion-content>
+            </page-listar>
 
         </ion-app>
         <script type="text/javascript" src="js/clases.js"></script>
