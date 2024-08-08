@@ -121,8 +121,9 @@ function navegar(evt) {
         case "/listar":
             listarCategorias();
             PANTALLA_LISTAR.style.display = "block";
-            break;
+            break; 
         case "/informe":
+            listarCategorias();
             PANTALLA_INFORME.style.display = "block";
             break;
         case "/mapa":
@@ -284,6 +285,7 @@ function btnAgregarEventoHandler(){
 }
 
 function btnMenuListarEventosHandler(){
+    eventos = [];
     fetch(`${APIbaseURL}/eventos.php?idUsuario=${usuarioLogueado.id}`, {
         method: 'GET',
         headers: {
@@ -323,9 +325,8 @@ function btnMenuListarEventosHandler(){
 
             eventos.forEach(e => {
                 let categoria = categorias.find(c => c.id === e.idCategoria);
-                let hoy = new Date();
                 
-                if (new Date(e.fecha).toDateString() === new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()).toDateString()) {
+                if (eventoFueHoy(e.fecha)) {
                     listadoEventosHoy += `
                     <ion-item class="ion-item-evento" producto-id="${e.id}">
                        <ion-thumbnail slot="start">
@@ -370,29 +371,90 @@ function btnMenuListarEventosHandler(){
 }
 
 function btnInformeEventosHandler() {
-    let informeBiberones = `
-        <ion-card color="medium">
-            <ion-card-header>
-            <ion-card-title>Biberones</ion-card-title>
-            <ion-card-subtitle>$ biberones ingeridos hoy.</ion-card-subtitle>
-            </ion-card-header>
+    let informeBiberones;
+    let informePaniales;
+    let contadorEventosBiberones = 0;
+    let contadorEventosPaniales = 0;
+    let listaEventosBiberones = [];
+    let listaEventosPaniales = [];
+    let idCategoriaBiberones = categorias.find(c => c.tipo === "Biberón").id;
+    console.log(idCategoriaBiberones);
+    let idCategoriaPaniales = categorias.find(c => c.tipo === "Pañal").id;
+    console.log(idCategoriaPaniales);
+    fetch(`${APIbaseURL}/eventos.php?idUsuario=${usuarioLogueado.id}`, {
+        method: 'GET',
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + usuarioLogueado.apiKey,
+            "apikey": usuarioLogueado.apiKey,
+            "iduser": usuarioLogueado.id
+        }})
+    .then(response => {
+        if (response.codigo === 401) {
+            console.log(response);  
+            cerrarSesionPorFaltaDeToken();
+        } else {
+            return response.json();
+        }
+    }).then(data => {
+        console.log(data);
+        for (let i = 0; i < data.eventos.length; i++) {
+            console.log(data.eventos[i]);
+            const eventoActual = data.eventos[i];
+            
+                console.log('fue hoy');
+                console.log(eventoActual);
+                if(eventoActual.idCategoria === idCategoriaBiberones){
+                    listaEventosBiberones.push(eventoActual);
+                    if (eventoFueHoy(eventoActual.fecha)) {
+                        contadorEventosBiberones++;
+                    }
+                } else if(eventoActual.idCategoria === idCategoriaPaniales){
+                    listaEventosPaniales.push(eventoActual);
+                    if (eventoFueHoy(eventoActual.fecha)) {
+                        contadorEventosPaniales.push(eventoActual);
+                    }
+                }
+            
 
-            <ion-card-content> Tiempo transcurrido desde ultimo biberón: $ </ion-card-content>
-        </ion-card>
-    `
+        }
+        
+        // obtener tiempo transcurrido desde ultimo evento
+        listaEventosBiberones.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+        listaEventosPaniales?.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
-    let informePaniales = `
-        <ion-card color="medium">
-            <ion-card-header>
-            <ion-card-title>Pañales</ion-card-title>
-            <ion-card-subtitle>$ pañales cambiados hoy.</ion-card-subtitle>
-            </ion-card-header>
+        let horasDesdeUltimoBiberon = ((Date.now() - new Date(listaEventosBiberones[0]?.fecha))/ 36e5).toFixed(2);
+        let horasDesdeUltimoPanial = ((Date.now() - new Date(listaEventosPaniales[0]?.fecha))/36e5).toFixed(2);
 
-            <ion-card-content> Tiempo transcurrido desde ultimo cambio de pañal: $ </ion-card-content>
-        </ion-card>
-    `
-    document.querySelector("#divBiberones").innerHTML = informeBiberones;
-    document.querySelector("#divPaniales").innerHTML = informePaniales;
+        informeBiberones = `
+            <ion-card color="medium">
+                <ion-card-header>
+                <ion-card-title>Biberones</ion-card-title>
+                <ion-card-subtitle>${contadorEventosBiberones} biberones ingeridos hoy.</ion-card-subtitle>
+                </ion-card-header>
+
+                <ion-card-content> Tiempo transcurrido desde ultimo biberón: ${horasDesdeUltimoBiberon} horas. </ion-card-content>
+            </ion-card>
+        `
+        informePaniales = `
+            <ion-card color="medium">
+                <ion-card-header>
+                <ion-card-title>Pañales</ion-card-title>
+                <ion-card-subtitle>${contadorEventosPaniales} pañales cambiados hoy.</ion-card-subtitle>
+                </ion-card-header>
+
+                <ion-card-content> Tiempo transcurrido desde ultimo cambio de pañal: ${horasDesdeUltimoPanial} horas. </ion-card-content>
+            </ion-card>
+        `
+        document.querySelector("#divBiberones").innerHTML = informeBiberones;
+        document.querySelector("#divPaniales").innerHTML = informePaniales;
+    }).catch((error) => {
+        console.log(error);
+        mostrarToast('ERROR', 'Error', 'Por favor, intente nuevamente.');
+    });
+            
+    
+    
 }
 
 function btnMapaPlazasHandler() {
@@ -475,6 +537,7 @@ function comboDepartamentosChangeHandler(evt) {
 }
 
 function listarCategorias() {
+    categorias = [];
     fetch(`${APIbaseURL}/categorias.php`, {
         method: 'GET',
         headers: {
@@ -569,6 +632,11 @@ async function mostrarToast(tipo, titulo, mensaje) {
 
     document.body.appendChild(toast);
     return toast.present();
+}
+
+function eventoFueHoy(fecha) {
+    let hoy = new Date();
+    return new Date(fecha).toDateString() === new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).toDateString();
 }
 
 //========================================================================
