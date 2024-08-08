@@ -674,6 +674,7 @@ function cerrarSesionPorFaltaDeToken() {
 //========================================================================
 async function mostrarToast(tipo, titulo, mensaje) {
     const toast = document.createElement('ion-toast');
+    toast.setAttribute('duration', '5000');
     toast.header = titulo;
     toast.message = mensaje;
     toast.position = 'bottom';
