@@ -176,8 +176,8 @@ function btnRegistrarseHandler() {
                     document.querySelector("#inputVerificacion").value = "";
                     document.querySelector("#inputDepartamento").value = "";
                     document.querySelector("#inputCiudad").value = "";
-                    mostrarToast('SUCCESS', 'Registro exitoso', 'Ya puede iniciar sesión.');
-                    NAV.push("page-login");
+                    mostrarToast('SUCCESS', 'Registro exitoso', data.mensaje);
+                    NAV.push("page-home");
                 }
             })
             .catch(error => {
@@ -209,40 +209,38 @@ function btnIngresarHandler() {
             },
             body: JSON.stringify(usuarioLogin)
         })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                if (data.mensaje) {
-                    mostrarToast('ERROR', 'Error', data.mensaje);
-                } else {
-                    // vaciar campos
-                    document.querySelector("#inputUsuarioIngresar").value = "";
-                    document.querySelector("#inputPasswordIngresar").value = "";
-                    console.log(data);
-                    localStorage.setItem("usuarioLogueado", JSON.stringify(data));
-                    mostrarToast('SUCCESS', 'Login exitoso', 'Se ha iniciado sesión.');
-                    NAV.push("page-home");
-                    // NAV.setRoot("page-productos");
-                    // NAV.popToRoot();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            if (data.mensaje) {
+                mostrarToast('ERROR', 'Error', data.mensaje);
+            } else {
+                // vaciar campos
+                document.querySelector("#inputUsuarioIngresar").value = "";
+                document.querySelector("#inputPasswordIngresar").value = "";
+                // setear local storage
+                localStorage.setItem("usuarioLogueado", JSON.stringify(data));
+                mostrarToast('SUCCESS', 'Login exitoso', 'Se ha iniciado sesión.');
+                NAV.setRoot("page-listar");
+                NAV.popToRoot();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
     } else {
-        mostrarToast('ERROR', 'Error', 'Todos los campos son obligatorios.');
+        mostrarToast('ERROR', 'Error', 'Todos los campos son requeridos.');
     }
 }
 
 function btnAgregarEventoHandler(){
     const fecha = document.querySelector("#datetime").value;
-    console.log(fecha);
     const detalle = document.querySelector("#inputDetalle").value;
     const idCategoria = document.querySelector("#pantalla-agregar-combo-categorias").value;
-    console.log(idCategoria);
     const idUsuario = usuarioLogueado.id;
-    console.log(idUsuario);
+
     if (fecha && detalle && idCategoria && idUsuario) {
+        // TODO: fecha >= hoy
         let nuevoEvento = new Evento();
         nuevoEvento.fecha = fecha;
         nuevoEvento.detalle = detalle;
@@ -260,24 +258,23 @@ function btnAgregarEventoHandler(){
             },
             body: JSON.stringify(nuevoEvento)
         })
-            .then(response => {
-                if (response.status === 401) {
-                    console.log(response);
-                    cerrarSesionPorFaltaDeToken();
-                } else {
-                    return response.json();
-                }
-            })
-            .then(data => {
-                console.log(data);
-                // vaciar campos
-                document.querySelector("#datetime").value = "";
-                document.querySelector("#inputDetalle").value = "";
-                mostrarToast('SUCCESS', 'Evento agregado', data.mensaje);           
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
+        .then(response => {
+            if (response.status === 401) {
+                cerrarSesionPorFaltaDeToken();
+            } else {
+                return response.json();
+            }
+        })
+        .then(data => {
+            // vaciar campos
+            document.querySelector("#datetime").value = "";
+            document.querySelector("#inputDetalle").value = "";
+            mostrarToast('SUCCESS', 'Evento agregado', data.mensaje);           
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            mostrarToast('ERROR', 'Error', error);
+        });
     } else {
         mostrarToast('ERROR', 'Error', 'Todos los campos son obligatorios.');
     }
@@ -287,87 +284,143 @@ function btnAgregarEventoHandler(){
 function btnMenuListarEventosHandler(){
     eventos = [];
     fetch(`${APIbaseURL}/eventos.php?idUsuario=${usuarioLogueado.id}`, {
-        method: 'GET',
+    method: 'GET',
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + usuarioLogueado.apiKey,
+        "apikey": usuarioLogueado.apiKey,
+        "iduser": usuarioLogueado.id
+    }})
+    .then(response => {
+        if (response.codigo === 401) {
+            console.log(response);
+            cerrarSesionPorFaltaDeToken();
+        } else {
+            return response.json();
+        }
+    }).then(data => {
+        console.log(data);
+        for (let i = 0; i < data.eventos.length; i++) {
+            console.log(data.eventos[i]);
+            const eventoActual = data.eventos[i];
+            eventos.push(eventoActual);
+        }
+        console.log(eventos);
+        
+        let listadoEventosHoy = `
+            <ion-card>
+                <ion-card-header>
+                    <ion-card-title>Eventos Hoy</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+            <ion-list>
+        
+        `;
+
+        let listadoEventosPasados = `
+            <ion-card>
+                <ion-card-header>
+                    <ion-card-title>Eventos Pasados</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                <ion-list>
+        `;
+
+        eventos.forEach(e => {
+            let categoria = categorias.find(c => c.id === e.idCategoria);
+            
+            if (eventoFueHoy(e.fecha)) {
+                listadoEventosHoy += `
+                <ion-item>
+                   <ion-thumbnail slot="start">
+                        <img src="https://babytracker.develotion.com/imgs/${categoria.imagen}.png" width="100"/>
+                    </ion-thumbnail>
+                    <ion-label>
+                        <h2>${categoria.tipo}</h2>
+                        <p>${e.fecha}</p>
+                        <p>${e.detalle}</p>
+                    </ion-label>
+                    <ion-button class="ion-button-evento" evento-id="${e.id}" slot="end" shape="round" size="default" color="tertiary">
+                        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                    </ion-button>
+                </ion-item>
+            `;
+            } else {
+                listadoEventosPasados += `
+                <ion-item>
+                   <ion-thumbnail slot="start">
+                        <img src="https://babytracker.develotion.com/imgs/${categoria.imagen}.png" width="100"/>
+                    </ion-thumbnail>
+                    <ion-label>
+                        <h2>${categoria.tipo}</h2>
+                        <p>${e.fecha}</p>
+                        <p>${e.detalle}</p>
+                    </ion-label>
+                    <ion-button class="ion-button-evento" evento-id="${e.id}" slot="end" shape="round" size="default" color="tertiary">
+                        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                    </ion-button>
+                </ion-item>
+            `;
+            }
+        });
+        
+        listadoEventosHoy += `
+                    </ion-list>
+                </ion-card-content>
+            </ion-card>
+        `;
+        listadoEventosPasados += `
+                    </ion-list>
+                </ion-card-content>
+            </ion-card>
+        `;
+
+        document.querySelector("#divEventos").innerHTML = listadoEventosHoy + listadoEventosPasados;
+
+        // borrar evento
+        document.querySelectorAll(".ion-button-evento").forEach(b => {
+            b.addEventListener("click", borrarEventoHandler);
+        });
+    
+    })
+    .catch((error) => {
+        console.log(error);
+        mostrarToast('ERROR', 'Error', 'Por favor, intente nuevamente.');
+    });
+}
+
+function borrarEventoHandler() {
+    const idEvento = this.getAttribute("evento-id");
+    console.log(idEvento);
+    fetch(`${APIbaseURL}/eventos.php?idEvento=${idEvento}`, {
+        method: 'DELETE',
         headers: {
             "Content-Type": "application/json",
             "Authorization": "Bearer " + usuarioLogueado.apiKey,
             "apikey": usuarioLogueado.apiKey,
             "iduser": usuarioLogueado.id
-        }})
-        .then(response => {
-            if (response.codigo === 401) {
-                console.log(response);
-                // TODO cerrar sesion por falta de token
-                cerrarSesionPorFaltaDeToken();
-            } else {
-                return response.json();
-            }
-        }).then(data => {
-            console.log(data);
-            for (let i = 0; i < data.eventos.length; i++) {
-                console.log(data.eventos[i]);
-                const eventoActual = data.eventos[i];
-                eventos.push(eventoActual);
-            }
-            console.log(eventos);
-            
-            let listadoEventosHoy = `
-                <h1>Eventos Hoy</h1>
-                <ion-list>
-            
-            `;
-
-            let listadoEventosPasados = `
-                <h1>Eventos Pasados</h1>
-                <ion-list>
-            
-            `;
-
-            eventos.forEach(e => {
-                let categoria = categorias.find(c => c.id === e.idCategoria);
-                
-                if (eventoFueHoy(e.fecha)) {
-                    listadoEventosHoy += `
-                    <ion-item class="ion-item-evento" producto-id="${e.id}">
-                       <ion-thumbnail slot="start">
-                            <img src="https://babytracker.develotion.com/imgs/${categoria.imagen}.png" width="100"/>
-                        </ion-thumbnail>
-                        <ion-label>
-                            <h2>${categoria.tipo}</h2>
-                            <p>${e.fecha}</p>
-                            <p>${e.detalle}</p>
-                        </ion-label>
-                        
-                    </ion-item>
-                `;
-                } else {
-                    listadoEventosPasados += `
-                    <ion-item class="ion-item-evento" producto-id="${e.id}">
-                       <ion-thumbnail slot="start">
-                            <img src="https://babytracker.develotion.com/imgs/${categoria.imagen}.png" width="100"/>
-                        </ion-thumbnail>
-                        <ion-label>
-                            <h2>${categoria.tipo}</h2>
-                            <p>${e.fecha}</p>
-                            <p>${e.detalle}</p>
-                        </ion-label>
-                        
-                    </ion-item>
-                `;
-                }
-            });
-            
-            listadoEventosHoy += '</ion-list>';
-            listadoEventosPasados += '</ion-list>';
-
-            document.querySelector("#divEventos").innerHTML = listadoEventosHoy + listadoEventosPasados;
-
-
-        })
-        .catch((error) => {
-            console.log(error);
-            mostrarToast('ERROR', 'Error', 'Por favor, intente nuevamente.');
-        });
+        }
+    })
+    .then(response => {
+        if (response.status === 401) {
+            console.log(response);
+            cerrarSesionPorFaltaDeToken();
+        } else {
+            return response.json();
+        }
+    })
+    .then(data => {
+        console.log(data);
+        if (data.mensaje) {
+            mostrarToast('SUCCESS', 'Evento eliminado', data.mensaje);
+            btnMenuListarEventosHandler();
+        } else {
+            mostrarToast('ERROR', 'Error', 'No se ha podido eliminar el evento.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
 }
 
 function btnInformeEventosHandler() {
@@ -452,9 +505,6 @@ function btnInformeEventosHandler() {
         console.log(error);
         mostrarToast('ERROR', 'Error', 'Por favor, intente nuevamente.');
     });
-            
-    
-    
 }
 
 function btnMapaPlazasHandler() {
@@ -586,6 +636,9 @@ function comboCategoriasChangeHandler(evt) {
     console.log(evt);
 }
 
+//========================================================================
+// -------------------------------- MENU -------------------------------
+//========================================================================
 function ocultarPantallas() {
     PANTALLA_HOME.style.display = "none";
     PANTALLA_LOGIN.style.display = "none";
@@ -596,12 +649,13 @@ function ocultarPantallas() {
     PANTALLA_MAPA.style.display = "none";
 }
 
-/* Menú */
 function cerrarMenu() {
     MENU.close();
 }
 
-// -------------------------- LOGOUT -------------------------
+//========================================================================
+// ------------------------------- LOGOUT ------------------------------
+//========================================================================
 function cerrarSesion() {
     cerrarMenu();
     localStorage.clear();
@@ -615,7 +669,9 @@ function cerrarSesionPorFaltaDeToken() {
     cerrarSesion();
 }
 
-// -------------------------- TOAST --------------------------
+//========================================================================
+// ------------------------------- TOAST -------------------------------
+//========================================================================
 async function mostrarToast(tipo, titulo, mensaje) {
     const toast = document.createElement('ion-toast');
     toast.header = titulo;
@@ -640,7 +696,7 @@ function eventoFueHoy(fecha) {
 }
 
 //========================================================================
-// -------------------------------- MAPA -------------------------------- 
+// -------------------------------- MAPA ------------------------------- 
 //========================================================================
 function inicializarMapa() {
     if (!map) {
