@@ -7,6 +7,23 @@ let categorias =[];
 let departamentos =[];
 let ciudades =[];
 let eventos =[];
+let plazas =[];
+
+let map = null;
+let markerUsuario = null;
+let markerPlaza = null;
+let posicionUsuario = {
+    latitude: -34.903816878014354,
+    longitude: -56.19059048108193
+};
+let posicionUsuarioIcon = L.icon({
+    iconUrl: 'img/usuario.png',
+    iconSize: [25, 25],
+});
+let posicionSucursalIcon = L.icon({
+    iconUrl: 'img/location.png',
+    iconSize: [25, 25],
+});
 
 const MENU = document.querySelector("#menu");
 const ROUTER = document.querySelector("#ruteo");
@@ -16,6 +33,8 @@ const PANTALLA_LOGIN = document.querySelector("#pantalla-login");
 const PANTALLA_REGISTRO = document.querySelector("#pantalla-registro");
 const PANTALLA_AGREGAR = document.querySelector("#pantalla-agregar");
 const PANTALLA_LISTAR = document.querySelector("#pantalla-listar");
+const PANTALLA_INFORME = document.querySelector("#pantalla-informe");
+const PANTALLA_MAPA = document.querySelector("#pantalla-mapa");
 const COMBO_CATEGORIAS = document.querySelector("#pantalla-agregar-combo-categorias");
 const COMBO_DEPARTAMENTOS = document.querySelector("#inputDepartamento");
 const COMBO_CIUDADES = document.querySelector("#inputCiudad");
@@ -27,6 +46,7 @@ inicializar();
 
 function inicializar() {
     suscribirmeAEventos();
+    cargarPosicionUsuario();
 }
 
 function suscribirmeAEventos() {
@@ -34,12 +54,83 @@ function suscribirmeAEventos() {
     document.querySelector("#btnRegistrarse").addEventListener("click", btnRegistrarseHandler);
     document.querySelector("#btnAgregarEvento").addEventListener("click", btnAgregarEventoHandler);
     document.querySelector("#btnMenuListarEventos").addEventListener("click", btnMenuListarEventosHandler);
+    document.querySelector("#btnInformeEventos").addEventListener("click", btnInformeEventosHandler);
+    document.querySelector("#btnMapaPlazas").addEventListener("click", btnMapaPlazasHandler);
+
 
     COMBO_CATEGORIAS.addEventListener("ionChange", comboCategoriasChangeHandler);
     COMBO_DEPARTAMENTOS.addEventListener("ionChange", comboDepartamentosChangeHandler);
 
     // Ruteo
     ROUTER.addEventListener("ionRouteDidChange", navegar);
+}
+
+//========================================================================
+// ------------------------------- RUTEO  -------------------------------
+//========================================================================
+function navegar(evt) {
+    const usuarioGuardadoEnLocalStorage = localStorage.getItem("usuarioLogueado");
+    console.log(usuarioGuardadoEnLocalStorage);
+    if (usuarioGuardadoEnLocalStorage) {
+        usuarioLogueado = JSON.parse(usuarioGuardadoEnLocalStorage);
+    } else {
+        usuarioLogueado = null;
+    }
+
+    document.querySelector("#btnMenuLogin").style.display = "none";
+    document.querySelector("#btnMenuRegistro").style.display = "none";
+    document.querySelector("#btnMenuAgregarEvento").style.display = "none";
+    document.querySelector("#btnMenuListarEventos").style.display = "none";
+    document.querySelector("#btnInformeEventos").style.display = "none";
+    document.querySelector("#btnMenuCerrarSesion").style.display = "none";
+
+    if (usuarioLogueado) {
+        document.querySelector("#btnMenuAgregarEvento").style.display = "block";
+        document.querySelector("#btnMenuListarEventos").style.display = "block";
+    document.querySelector("#btnInformeEventos").style.display = "block";
+    document.querySelector("#btnMenuCerrarSesion").style.display = "block";
+    } else {
+        document.querySelector("#btnMenuLogin").style.display = "block";
+        document.querySelector("#btnMenuRegistro").style.display = "block";
+    }
+
+    ocultarPantallas();
+
+    const pantallaDestino = evt.detail.to;
+    switch(pantallaDestino) {
+        case "/":
+            if (usuarioLogueado) {
+                NAV.setRoot("page-home");
+                NAV.popToRoot();
+            } else {
+                NAV.setRoot("page-login");
+                NAV.popToRoot();
+            }
+            break;
+        case "/login":
+            PANTALLA_LOGIN.style.display = "block";
+            break;
+        case "/registro":
+            listarDepartamentos();
+            PANTALLA_REGISTRO.style.display = "block";
+            break;
+        case "/agregar":
+            listarCategorias();
+            PANTALLA_AGREGAR.style.display = "block";
+            break;
+        case "/listar":
+            listarCategorias();
+            PANTALLA_LISTAR.style.display = "block";
+            break;
+        case "/informe":
+            PANTALLA_INFORME.style.display = "block";
+            break;
+        case "/mapa":
+            obtenerPlazas();
+            PANTALLA_MAPA.style.display = "block";
+            inicializarMapa();
+            break;
+    }
 }
 
 //========================================================================
@@ -278,62 +369,34 @@ function btnMenuListarEventosHandler(){
         });
 }
 
-//========================================================================
-// ------------------------------- RUTEO  -------------------------------
-//========================================================================
-function navegar(evt) {
-    const usuarioGuardadoEnLocalStorage = localStorage.getItem("usuarioLogueado");
-    console.log(usuarioGuardadoEnLocalStorage);
-    if (usuarioGuardadoEnLocalStorage) {
-        usuarioLogueado = JSON.parse(usuarioGuardadoEnLocalStorage);
-    } else {
-        usuarioLogueado = null;
-    }
+function btnInformeEventosHandler() {
+    let informeBiberones = `
+        <ion-card color="medium">
+            <ion-card-header>
+            <ion-card-title>Biberones</ion-card-title>
+            <ion-card-subtitle>$ biberones ingeridos hoy.</ion-card-subtitle>
+            </ion-card-header>
 
-    document.querySelector("#btnMenuLogin").style.display = "none";
-    document.querySelector("#btnMenuRegistro").style.display = "none";
-    document.querySelector("#btnMenuAgregarEvento").style.display = "none";
-    document.querySelector("#btnMenuListarEventos").style.display = "none";
-    document.querySelector("#btnMenuCerrarSesion").style.display = "none";
+            <ion-card-content> Tiempo transcurrido desde ultimo biberón: $ </ion-card-content>
+        </ion-card>
+    `
 
-    if (usuarioLogueado) {
-        document.querySelector("#btnMenuAgregarEvento").style.display = "block";
-        document.querySelector("#btnMenuListarEventos").style.display = "block";
-        document.querySelector("#btnMenuCerrarSesion").style.display = "block";
-    } else {
-        document.querySelector("#btnMenuLogin").style.display = "block";
-        document.querySelector("#btnMenuRegistro").style.display = "block";
-    }
+    let informePaniales = `
+        <ion-card color="medium">
+            <ion-card-header>
+            <ion-card-title>Pañales</ion-card-title>
+            <ion-card-subtitle>$ pañales cambiados hoy.</ion-card-subtitle>
+            </ion-card-header>
 
-    ocultarPantallas();
+            <ion-card-content> Tiempo transcurrido desde ultimo cambio de pañal: $ </ion-card-content>
+        </ion-card>
+    `
+    document.querySelector("#divBiberones").innerHTML = informeBiberones;
+    document.querySelector("#divPaniales").innerHTML = informePaniales;
+}
 
-    const pantallaDestino = evt.detail.to;
-    switch(pantallaDestino) {
-        case "/":
-            if (usuarioLogueado) {
-                NAV.setRoot("page-home");
-                NAV.popToRoot();
-            } else {
-                NAV.setRoot("page-login");
-                NAV.popToRoot();
-            }
-            break;
-        case "/login":
-            PANTALLA_LOGIN.style.display = "block";
-            break;
-        case "/registro":
-            listarDepartamentos();
-            PANTALLA_REGISTRO.style.display = "block";
-            break;
-        case "/agregar":
-            listarCategorias();
-            PANTALLA_AGREGAR.style.display = "block";
-            break;
-        case "/listar":
-            listarCategorias();
-            PANTALLA_LISTAR.style.display = "block";
-            break;
-    }
+function btnMapaPlazasHandler() {
+    
 }
 
 //========================================================================
@@ -466,6 +529,8 @@ function ocultarPantallas() {
     PANTALLA_REGISTRO.style.display = "none";
     PANTALLA_AGREGAR.style.display = "none";
     PANTALLA_LISTAR.style.display = "none";
+    PANTALLA_INFORME.style.display = "none";
+    PANTALLA_MAPA.style.display = "none";
 }
 
 /* Menú */
@@ -504,4 +569,86 @@ async function mostrarToast(tipo, titulo, mensaje) {
 
     document.body.appendChild(toast);
     return toast.present();
+}
+
+//========================================================================
+// -------------------------------- MAPA -------------------------------- 
+//========================================================================
+function inicializarMapa() {
+    if (!map) {
+        map = L.map('divMapa').setView([posicionUsuario.latitude, posicionUsuario.longitude], 18);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        markerUsuario = L.marker([posicionUsuario.latitude, posicionUsuario.longitude], {icon: posicionUsuarioIcon}).addTo(map);
+    }
+}
+
+function obtenerPlazas() {
+    fetch(`${APIbaseURL}/plazas.php`, {
+        method: 'GET',
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + usuarioLogueado.apiKey,
+            "apikey": usuarioLogueado.apiKey,
+            "iduser": usuarioLogueado.id
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            mostrarToast('ERROR', 'Error', data.error);
+        } else if (data.plazas.length === 0) {
+            mostrarToast('ERROR', 'Error', 'No se han encontrado plazas');
+        } else {
+            console.log(data);
+            for (let i = 0; i < data.plazas.length; i++) {
+                console.log(data.plazas[i]);
+                const plazaActual = data.plazas[i];
+                plazas.push(plazaActual);
+            }
+            plazas.forEach(p => {
+                let esAccesible = p.accesible == "1" ? "Sí" : "No";
+                let aceptaMascotas = p.aceptaMascotas == "1" ? "Sí" : "No";
+                markerPlaza = L.marker([p.latitud, p.longitud], {icon: posicionSucursalIcon}).addTo(map);
+                markerPlaza.bindTooltip(`Es accesible: ${esAccesible}. Acepta mascotas: ${aceptaMascotas}`).openTooltip();
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+//========================================================================
+// ----------------------------- CAPACITOR ----------------------------- 
+//========================================================================
+function cargarPosicionUsuario() {
+    if (Capacitor.isNativePlatform()) {
+        // Cargo la posición del usuario desde el dispositivo.
+        const loadCurrentPosition = async () => {
+            const resultado = await Capacitor.Plugins.Geolocation.getCurrentPosition({ timeout: 3000 });
+            if (resultado.coords && resultado.coords.latitude) {
+                posicionUsuario = {
+                    latitude: resultado.coords.latitude,
+                    longitude: resultado.coords.longitude
+                }
+            }
+        };
+        loadCurrentPosition();
+    } else {
+        // Cargo la posición del usuario desde el navegador web.
+        window.navigator.geolocation.getCurrentPosition(
+        // Callback de éxito.
+        function (pos) {
+            if (pos && pos.coords && pos.coords.latitude) {
+                posicionUsuario = {
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude
+                };
+            }
+        },
+        // Callback de error.
+        function () {
+            // No necesito hacer nada, ya asumí que el usuario estaba en ORT.
+        });
+    }
 }
