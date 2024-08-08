@@ -30,7 +30,7 @@
             <!-- Menú -->
             <ion-menu content-id="main-content" id="menu">
                 <ion-header>
-                    <ion-toolbar>
+                    <ion-toolbar color="tertiary">
                         <ion-title>Menu</ion-title>
                     </ion-toolbar>
                 </ion-header>
@@ -46,7 +46,16 @@
                     </ion-list>
                 </ion-content>
             </ion-menu>
-            <div id="main-content"></div>
+            <div id="main-content">
+                <ion-header>
+                    <ion-toolbar color="tertiary">
+                        <ion-buttons slot="start">
+                            <ion-menu-button></ion-menu-button>
+                        </ion-buttons>
+                        <ion-title>Obligatorio</ion-title>
+                    </ion-toolbar>
+                </ion-header>
+            </div>
 
             <!-- Pantalla - Home -->
             <page-home class="ion-page" id="pantalla-home">

@@ -310,7 +310,7 @@ function btnMenuListarEventosHandler(){
             console.log(eventos);
             
             let listadoEventosHoy = `
-                <h1>Eventos de hoy</h1>
+                <h1>Eventos Hoy</h1>
                 <ion-list>
             
             `;
