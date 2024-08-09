@@ -53,10 +53,9 @@ function suscribirmeAEventos() {
     document.querySelector("#btnIngresar").addEventListener("click", btnIngresarHandler);
     document.querySelector("#btnRegistrarse").addEventListener("click", btnRegistrarseHandler);
     document.querySelector("#btnAgregarEvento").addEventListener("click", btnAgregarEventoHandler);
-    document.querySelector("#btnMenuListarEventos").addEventListener("click", btnMenuListarEventosHandler);
+    document.querySelector("#btnListarEventos").addEventListener("click", btnListarEventosHandler);
     document.querySelector("#btnInformeEventos").addEventListener("click", btnInformeEventosHandler);
     document.querySelector("#btnMapaPlazas").addEventListener("click", btnMapaPlazasHandler);
-
 
     COMBO_CATEGORIAS.addEventListener("ionChange", comboCategoriasChangeHandler);
     COMBO_DEPARTAMENTOS.addEventListener("ionChange", comboDepartamentosChangeHandler);
@@ -69,27 +68,30 @@ function suscribirmeAEventos() {
 // ------------------------------- RUTEO  -------------------------------
 //========================================================================
 function navegar(evt) {
+    // obtener usuario logueado desde local storage
     const usuarioGuardadoEnLocalStorage = localStorage.getItem("usuarioLogueado");
-    console.log(usuarioGuardadoEnLocalStorage);
     if (usuarioGuardadoEnLocalStorage) {
         usuarioLogueado = JSON.parse(usuarioGuardadoEnLocalStorage);
     } else {
         usuarioLogueado = null;
     }
 
+    // ocultar opciones del menú
     document.querySelector("#btnMenuLogin").style.display = "none";
     document.querySelector("#btnMenuRegistro").style.display = "none";
     document.querySelector("#btnMenuAgregarEvento").style.display = "none";
-    document.querySelector("#btnMenuListarEventos").style.display = "none";
+    document.querySelector("#btnListarEventos").style.display = "none";
     document.querySelector("#btnInformeEventos").style.display = "none";
     document.querySelector("#btnMenuCerrarSesion").style.display = "none";
 
     if (usuarioLogueado) {
+        // mostrar menú para usuario logueado
         document.querySelector("#btnMenuAgregarEvento").style.display = "block";
-        document.querySelector("#btnMenuListarEventos").style.display = "block";
-    document.querySelector("#btnInformeEventos").style.display = "block";
-    document.querySelector("#btnMenuCerrarSesion").style.display = "block";
+        document.querySelector("#btnListarEventos").style.display = "block";
+        document.querySelector("#btnInformeEventos").style.display = "block";
+        document.querySelector("#btnMenuCerrarSesion").style.display = "block";
     } else {
+        // mostrar menú para usuario no autenticado
         document.querySelector("#btnMenuLogin").style.display = "block";
         document.querySelector("#btnMenuRegistro").style.display = "block";
     }
@@ -99,6 +101,7 @@ function navegar(evt) {
     const pantallaDestino = evt.detail.to;
     switch(pantallaDestino) {
         case "/":
+            // verificar usuario
             if (usuarioLogueado) {
                 NAV.setRoot("page-home");
                 NAV.popToRoot();
@@ -233,6 +236,7 @@ function btnIngresarHandler() {
     }
 }
 
+// --------------------- AGREGAR EVENTO ---------------------
 function btnAgregarEventoHandler(){
     const fecha = document.querySelector("#datetime").value;
     const detalle = document.querySelector("#inputDetalle").value;
@@ -281,7 +285,8 @@ function btnAgregarEventoHandler(){
 
 }
 
-function btnMenuListarEventosHandler(){
+// --------------------- LISTAR EVENTOS ---------------------
+function btnListarEventosHandler(){
     eventos = [];
     fetch(`${APIbaseURL}/eventos.php?idUsuario=${usuarioLogueado.id}`, {
     method: 'GET',
@@ -389,6 +394,7 @@ function btnMenuListarEventosHandler(){
     });
 }
 
+// --------------------- BORRAR EVENTO ---------------------
 function borrarEventoHandler() {
     const idEvento = this.getAttribute("evento-id");
     console.log(idEvento);
@@ -413,7 +419,7 @@ function borrarEventoHandler() {
         console.log(data);
         if (data.mensaje) {
             mostrarToast('SUCCESS', 'Evento eliminado', data.mensaje);
-            btnMenuListarEventosHandler();
+            btnListarEventosHandler();
         } else {
             mostrarToast('ERROR', 'Error', 'No se ha podido eliminar el evento.');
         }
@@ -423,6 +429,7 @@ function borrarEventoHandler() {
     });
 }
 
+// --------------------- INFORME EVENTOS ---------------------
 function btnInformeEventosHandler() {
     let informeBiberones;
     let informePaniales;
@@ -431,9 +438,8 @@ function btnInformeEventosHandler() {
     let listaEventosBiberones = [];
     let listaEventosPaniales = [];
     let idCategoriaBiberones = categorias.find(c => c.tipo === "Biberón").id;
-    console.log(idCategoriaBiberones);
     let idCategoriaPaniales = categorias.find(c => c.tipo === "Pañal").id;
-    console.log(idCategoriaPaniales);
+
     fetch(`${APIbaseURL}/eventos.php?idUsuario=${usuarioLogueado.id}`, {
         method: 'GET',
         headers: {
@@ -452,33 +458,28 @@ function btnInformeEventosHandler() {
     }).then(data => {
         console.log(data);
         for (let i = 0; i < data.eventos.length; i++) {
-            console.log(data.eventos[i]);
             const eventoActual = data.eventos[i];
-            
-                console.log('fue hoy');
-                console.log(eventoActual);
-                if(eventoActual.idCategoria === idCategoriaBiberones){
-                    listaEventosBiberones.push(eventoActual);
-                    if (eventoFueHoy(eventoActual.fecha)) {
-                        contadorEventosBiberones++;
-                    }
-                } else if(eventoActual.idCategoria === idCategoriaPaniales){
-                    listaEventosPaniales.push(eventoActual);
-                    if (eventoFueHoy(eventoActual.fecha)) {
-                        contadorEventosPaniales.push(eventoActual);
-                    }
-                }
-            
 
+            if(eventoActual.idCategoria === idCategoriaBiberones){
+                listaEventosBiberones.push(eventoActual);
+                if (eventoFueHoy(eventoActual.fecha)) {
+                    contadorEventosBiberones++;
+                }
+            } else if(eventoActual.idCategoria === idCategoriaPaniales){
+                listaEventosPaniales.push(eventoActual);
+                if (eventoFueHoy(eventoActual.fecha)) {
+                    contadorEventosPaniales++;
+                }
+            }
         }
         
         // obtener tiempo transcurrido desde ultimo evento
         listaEventosBiberones.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
         listaEventosPaniales?.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
         let horasDesdeUltimoBiberon = ((Date.now() - new Date(listaEventosBiberones[0]?.fecha))/ 36e5).toFixed(2);
         let horasDesdeUltimoPanial = ((Date.now() - new Date(listaEventosPaniales[0]?.fecha))/36e5).toFixed(2);
 
+        // card informe biberones
         informeBiberones = `
             <ion-card color="medium">
                 <ion-card-header>
@@ -489,6 +490,7 @@ function btnInformeEventosHandler() {
                 <ion-card-content> Tiempo transcurrido desde ultimo biberón: ${horasDesdeUltimoBiberon} horas. </ion-card-content>
             </ion-card>
         `
+        // card informe pañales
         informePaniales = `
             <ion-card color="medium">
                 <ion-card-header>
@@ -503,7 +505,7 @@ function btnInformeEventosHandler() {
         document.querySelector("#divPaniales").innerHTML = informePaniales;
     }).catch((error) => {
         console.log(error);
-        mostrarToast('ERROR', 'Error', 'Por favor, intente nuevamente.');
+        mostrarToast('ERROR', 'Error', 'Por favor intente nuevamente.');
     });
 }
 
@@ -665,7 +667,7 @@ function cerrarSesion() {
 }
 
 function cerrarSesionPorFaltaDeToken() {
-    mostrarToast('ERROR', 'No autorizado', 'Se ha cerrado sesión por seguridad');
+    mostrarToast('ERROR', 'Usuario no autorizado', 'Se ha cerrado sesión por seguridad');
     cerrarSesion();
 }
 
@@ -691,6 +693,9 @@ async function mostrarToast(tipo, titulo, mensaje) {
     return toast.present();
 }
 
+//========================================================================
+// ------------------------------- UTILS -------------------------------
+//========================================================================
 function eventoFueHoy(fecha) {
     let hoy = new Date();
     return new Date(fecha).toDateString() === new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).toDateString();
