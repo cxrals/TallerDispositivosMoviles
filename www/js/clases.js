@@ -84,8 +84,4 @@ class Evento {
 
         return instancia;
     }
-
-    obtenerURLImagen() {
-        return "https://ort-tallermoviles.herokuapp.com/assets/imgs/" + this.urlImagen + ".jpg";
-    }
 }
