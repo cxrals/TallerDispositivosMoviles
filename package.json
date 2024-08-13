@@ -1,0 +1,22 @@
+{
+  "name": "tallerdispositivosmoviles",
+  "version": "1.0.0",
+  "description": "Obligatorio",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "cxrals",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/geolocation": "^6.0.1",
+    "@capacitor/local-notifications": "^6.1.0",
+    "cordova": "^6.1.1",
+    "native-run": "^2.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}
