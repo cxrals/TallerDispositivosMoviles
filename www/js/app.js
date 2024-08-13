@@ -20,7 +20,7 @@ let posicionUsuarioIcon = L.icon({
     iconUrl: 'img/usuario.png',
     iconSize: [25, 25],
 });
-let posicionSucursalIcon = L.icon({
+let posicionPlazaIcon = L.icon({
     iconUrl: 'img/location.png',
     iconSize: [25, 25],
 });
@@ -82,13 +82,15 @@ function navegar(evt) {
     document.querySelector("#btnMenuAgregarEvento").style.display = "none";
     document.querySelector("#btnListarEventos").style.display = "none";
     document.querySelector("#btnInformeEventos").style.display = "none";
+    document.querySelector("#btnMapaPlazas").style.display = "none";
     document.querySelector("#btnMenuCerrarSesion").style.display = "none";
-
+    
     if (usuarioLogueado) {
         // mostrar menú para usuario logueado
         document.querySelector("#btnMenuAgregarEvento").style.display = "block";
         document.querySelector("#btnListarEventos").style.display = "block";
         document.querySelector("#btnInformeEventos").style.display = "block";
+        document.querySelector("#btnMapaPlazas").style.display = "block";
         document.querySelector("#btnMenuCerrarSesion").style.display = "block";
     } else {
         // mostrar menú para usuario no autenticado
@@ -156,8 +158,6 @@ function btnRegistrarseHandler() {
             nuevoUsuario.idDepartamento = departamento;
             nuevoUsuario.idCiudad = ciudad;
 
-            console.log(nuevoUsuario);
-
             fetch(`${APIbaseURL}/usuarios.php`, {
                 method: 'POST',
                 headers: {
@@ -170,7 +170,7 @@ function btnRegistrarseHandler() {
             })
             .then(data => {
                 console.log(data);
-                if (data.mensaje) {
+                if (data.mensaje && data.codigo !== 200) {
                     mostrarToast('ERROR', 'Error', data.mensaje);
                 } else {
                     // vaciar campos
@@ -215,7 +215,7 @@ function btnIngresarHandler() {
         .then(response => response.json())
         .then(data => {
             console.log(data);
-            if (data.mensaje) {
+            if (data.mensaje && data.codigo !== 200) {
                 mostrarToast('ERROR', 'Error', data.mensaje);
             } else {
                 // vaciar campos
@@ -223,9 +223,9 @@ function btnIngresarHandler() {
                 document.querySelector("#inputPasswordIngresar").value = "";
                 // setear local storage
                 localStorage.setItem("usuarioLogueado", JSON.stringify(data));
-                mostrarToast('SUCCESS', 'Login exitoso', 'Se ha iniciado sesión.');
-                NAV.setRoot("page-listar");
-                NAV.popToRoot();
+                mostrarToast('SUCCESS', 'Login exitoso', 'Se ha iniciado sesión correctamente.');
+                NAV.setRoot("page-home");
+                NAV.popToRoot(); 
             }
         })
         .catch(error => {
@@ -250,7 +250,6 @@ function btnAgregarEventoHandler(){
         nuevoEvento.detalle = detalle;
         nuevoEvento.idCategoria = idCategoria;
         nuevoEvento.idUsuario = idUsuario;
-        console.log(nuevoEvento);
 
         fetch(`${APIbaseURL}/eventos.php`, {
             method: 'POST',
@@ -270,6 +269,7 @@ function btnAgregarEventoHandler(){
             }
         })
         .then(data => {
+            console.log(data);
             // vaciar campos
             document.querySelector("#datetime").value = "";
             document.querySelector("#inputDetalle").value = "";
@@ -298,7 +298,7 @@ function btnListarEventosHandler(){
     }})
     .then(response => {
         if (response.codigo === 401) {
-            console.log(response);
+            console.error(response.mensaje);
             cerrarSesionPorFaltaDeToken();
         } else {
             return response.json();
@@ -306,11 +306,9 @@ function btnListarEventosHandler(){
     }).then(data => {
         console.log(data);
         for (let i = 0; i < data.eventos.length; i++) {
-            console.log(data.eventos[i]);
             const eventoActual = data.eventos[i];
             eventos.push(eventoActual);
         }
-        console.log(eventos);
         
         let listadoEventosHoy = `
             <ion-card>
@@ -397,7 +395,7 @@ function btnListarEventosHandler(){
 // --------------------- BORRAR EVENTO ---------------------
 function borrarEventoHandler() {
     const idEvento = this.getAttribute("evento-id");
-    console.log(idEvento);
+    
     fetch(`${APIbaseURL}/eventos.php?idEvento=${idEvento}`, {
         method: 'DELETE',
         headers: {
@@ -408,8 +406,8 @@ function borrarEventoHandler() {
         }
     })
     .then(response => {
-        if (response.status === 401) {
-            console.log(response);
+        if (response.codigo === 401) {
+            console.error(response.mensaje);
             cerrarSesionPorFaltaDeToken();
         } else {
             return response.json();
@@ -417,7 +415,7 @@ function borrarEventoHandler() {
     })
     .then(data => {
         console.log(data);
-        if (data.mensaje) {
+        if (data.mensaje && data.codigo == 200) {
             mostrarToast('SUCCESS', 'Evento eliminado', data.mensaje);
             btnListarEventosHandler();
         } else {
@@ -450,7 +448,7 @@ function btnInformeEventosHandler() {
         }})
     .then(response => {
         if (response.codigo === 401) {
-            console.log(response);  
+            console.error(response.mensaje);  
             cerrarSesionPorFaltaDeToken();
         } else {
             return response.json();
@@ -525,20 +523,19 @@ function listarDepartamentos() {
     })
     .then(response => {
         if (response.codigo === 401) {
-            console.log(response);
+            console.error(response.mensaje);
             cerrarSesionPorFaltaDeToken();
         } else {
             return response.json();
         }
     }).then(data => {
+        console.log(data);
         if (data.error) {
             mostrarToast('ERROR', 'Error', data.error);
         } else if (data.departamentos.length === 0) {
             mostrarToast('ERROR', 'Error', 'No se han encontado departamentos');
         } else {
-            console.log(data);
             for (let i = 0; i < data.departamentos.length; i++) {
-                console.log(data.departamentos[i]);
                 const departamentoActual = data.departamentos[i];
                 departamentos.push(departamentoActual);
             }
@@ -565,14 +562,13 @@ function comboDepartamentosChangeHandler(evt) {
     })
     .then(response => response.json())
     .then(data => {
+        console.log(data);
         if (data.error) {
             mostrarToast('ERROR', 'Error', data.error);
         } else if (data.ciudades.length === 0) {
             mostrarToast('ERROR', 'Error', 'No se han encontrado ciudades');
         } else {
-            console.log(data);
             for (let i = 0; i < data.ciudades.length; i++) {
-                console.log(data.ciudades[i]);
                 const ciudadActual = data.ciudades[i];
                 ciudades.push(ciudadActual);
             }
@@ -600,22 +596,21 @@ function listarCategorias() {
         }
     })
         .then(response => {
-            if (response.status === 401) {
-                console.log(response);
+            if (response.codigo === 401) {
+                console.error(response.mensaje);
                 cerrarSesionPorFaltaDeToken();
             } else {
                 return response.json();
             }
         })
         .then(data => {
-            if (data.error) {
-                mostrarToast('ERROR', 'Error', data.error);
+            console.log(data);
+            if (data.codigo !== 200) {
+                mostrarToast('ERROR', 'Error', data.mensaje);
             } else if (data.categorias.length === 0) {
                 mostrarToast('ERROR', 'Error', 'No se han encontado categorías');
             } else {
-                console.log(data);
                 for (let i = 0; i < data.categorias.length; i++) {
-                    console.log(data.categorias[i]);
                     const categoriaActual = data.categorias[i];
                     categorias.push(categoriaActual);
                 }
@@ -680,7 +675,7 @@ async function mostrarToast(tipo, titulo, mensaje) {
     toast.header = titulo;
     toast.message = mensaje;
     toast.position = 'bottom';
-    toast.duration = 2000;
+    toast.duration = 5000;
     if (tipo === "ERROR") {
         toast.color = "danger";
     } else if (tipo === "SUCCESS") {
@@ -724,21 +719,21 @@ function obtenerPlazas() {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.error) {
-            mostrarToast('ERROR', 'Error', data.error);
+        console.log(data);
+        if (data.codigo !== 200) {
+            mostrarToast('ERROR', 'Error', data.mensaje);
         } else if (data.plazas.length === 0) {
             mostrarToast('ERROR', 'Error', 'No se han encontrado plazas');
         } else {
-            console.log(data);
             for (let i = 0; i < data.plazas.length; i++) {
-                console.log(data.plazas[i]);
                 const plazaActual = data.plazas[i];
                 plazas.push(plazaActual);
             }
             plazas.forEach(p => {
                 let esAccesible = p.accesible == "1" ? "Sí" : "No";
                 let aceptaMascotas = p.aceptaMascotas == "1" ? "Sí" : "No";
-                markerPlaza = L.marker([p.latitud, p.longitud], {icon: posicionSucursalIcon}).addTo(map);
+                markerPlaza = L.marker([p.latitud, p.longitud], {icon: posicionPlazaIcon}).addTo(map);
+                // setear mensaje en tooltip
                 markerPlaza.bindTooltip(`Es accesible: ${esAccesible}. Acepta mascotas: ${aceptaMascotas}`).openTooltip();
             });
         }
